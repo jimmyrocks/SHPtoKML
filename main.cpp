@@ -2,8 +2,11 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include <iomanip> //Used to set the precision of the double output to the KML file
 using namespace std;
+typedef signed long int __int32;
+
 
 void TrimSpaces( string& str)
 {  
@@ -47,7 +50,7 @@ int liOpenFile(string lsFileName, string lsFilePath)
 	strcpy(lcFileName,lsFileShape.c_str());
 	int liReturnValue = 0;	
 	ifstream loFile (lcFileName, ios::in|ios::binary|ios::ate);
-
+	
 	if (loFile.is_open())
 	{
 		ifstream::pos_type size = loFile.tellg();
@@ -57,31 +60,31 @@ int liOpenFile(string lsFileName, string lsFilePath)
 		loFile.close();
 		lcFileContents = (unsigned char*)lCFileContents;
 		
-		int32_t sShapeType =     (
+		__int32 sShapeType =     (
 								  lcFileContents[32]
 								  + lcFileContents[23] * 256
 								  + lcFileContents[34] * 256 * 256
 								  + lcFileContents[35] * 256 * 256 * 256
 								  );
-
+		
 		
 		delete[] lcFileContents;
 		
 		if (sShapeType == 5)
 		{
 			
-		liReturnValue++;
-		
-		//Declare the DBF file and open it
-		ifstream::pos_type sizeDBF;
-		char * lCFileContentsDBF;
-		unsigned char * lcFileContentsDBF;
-		char * lcFileNameDBF = new char[lsFileDBF.size()];
-		strcpy(lcFileNameDBF,lsFileDBF.c_str());
-		liReturnValue = 0;
-		
-		ifstream loFileDBF (lcFileNameDBF, ios::in|ios::binary|ios::ate);
-		
+			liReturnValue++;
+			
+			//Declare the DBF file and open it
+			ifstream::pos_type sizeDBF;
+			char * lCFileContentsDBF;
+			unsigned char * lcFileContentsDBF;
+			char * lcFileNameDBF = new char[lsFileDBF.size()];
+			strcpy(lcFileNameDBF,lsFileDBF.c_str());
+			liReturnValue = 0;
+			
+			ifstream loFileDBF (lcFileNameDBF, ios::in|ios::binary|ios::ate);
+			
 			if (loFileDBF.is_open())
 			{
 				//Try to read the DBF
@@ -101,8 +104,8 @@ int liOpenFile(string lsFileName, string lsFilePath)
 				//Look for the header info
 				if (lbDBFFound)
 				{
-				
-					int32_t DBFHeaderLength = 0;
+					
+					__int32 DBFHeaderLength = 0;
 					DBFHeaderLength =	lcFileContentsDBF[8] + 
 					lcFileContentsDBF[9]*256;
 					
@@ -263,17 +266,17 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 			fileDBF.close();
 			lcFileContentsDBF = (unsigned char*)lCFileContentsDBF;
 		}
-		int32_t DBFHeaderLength = 0;
-		int32_t DBFRecordLength = 0;
-		int32_t DBFRecordCount = 0;
+		__int32 DBFHeaderLength = 0;
+		__int32 DBFRecordLength = 0;
+		__int32 DBFRecordCount = 0;
 		if (lbDBFFound)
 		{
 			//Let's get the DBF headers and stuff
 			//http://www.dbase.com/knowledgebase/int/db7_file_fmt.htm
-			/*int32_t DBFRecordType = lcFileContentsDBF[0];
-			 int32_t DBFRecordDateYY = lcFileContentsDBF[1]+1900;
-			 int32_t DBFRecordDateMM = lcFileContentsDBF[2];
-			 int32_t DBFRecordDateDD = lcFileContentsDBF[3]; */
+			/*__int32 DBFRecordType = lcFileContentsDBF[0];
+			 __int32 DBFRecordDateYY = lcFileContentsDBF[1]+1900;
+			 __int32 DBFRecordDateMM = lcFileContentsDBF[2];
+			 __int32 DBFRecordDateDD = lcFileContentsDBF[3]; */
 			DBFRecordCount = 
 			lcFileContentsDBF[4] +
 			lcFileContentsDBF[5]*256 +
@@ -321,8 +324,8 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 		double dBounds[8];
 		
 		//0–3 	int32 	big 	File code (always hex value 0x0000270a)
-		//int32_t sFileCode = lcFileContents[3] | (lcFileContents[2] << 8)  | (lcFileContents[1] << 16) | (lcFileContents[0] << 24);
-		/*int32_t sFileCode = (
+		//__int32 sFileCode = lcFileContents[3] | (lcFileContents[2] << 8)  | (lcFileContents[1] << 16) | (lcFileContents[0] << 24);
+		/*__int32 sFileCode = (
 		 lcFileContents[0] * 256 * 256 * 256
 		 + lcFileContents[1] * 256 * 256
 		 + lcFileContents[2] * 256
@@ -330,8 +333,8 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 		 );*/
 		//4–23 	int32 	big 	Unused; five uint32
 		//24–27 	int32 	big 	File length (in 16-bit words, including the header)
-		//int32_t sFileLength = lcFileContents[27] | (lcFileContents[26] << 8)  | (lcFileContents[25] << 16) | (lcFileContents[24] << 24);
-		int32_t sFileLength = (
+		//__int32 sFileLength = lcFileContents[27] | (lcFileContents[26] << 8)  | (lcFileContents[25] << 16) | (lcFileContents[24] << 24);
+		__int32 sFileLength = (
 							   lcFileContents[24] * 256 * 256 * 256
 							   + lcFileContents[25] * 256 * 256
 							   + lcFileContents[26] * 256 
@@ -339,16 +342,16 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 							   );
 		sFileLength = (sFileLength * 2 - 100)/8;
 		//28–31 	int32 	little 	Version
-		//int32_t sVersion = lcFileContents[28] | (lcFileContents[29] << 8)  | (lcFileContents[30] << 16) | (lcFileContents[31] << 24);
-		/*int32_t sVersion =     (
+		//__int32 sVersion = lcFileContents[28] | (lcFileContents[29] << 8)  | (lcFileContents[30] << 16) | (lcFileContents[31] << 24);
+		/*__int32 sVersion =     (
 		 lcFileContents[28]
 		 + lcFileContents[29] * 256
 		 + lcFileContents[30] * 256 * 256
 		 + lcFileContents[31] * 256 * 256 * 256
 		 ); */
 		//32–35 	int32 	little 	Shape type (see reference below)
-		//int32_t sShapeType = lcFileContents[32] | (lcFileContents[33] << 8)  | (lcFileContents[34] << 16) | (lcFileContents[35] << 24);
-		int32_t sShapeType =     (
+		//__int32 sShapeType = lcFileContents[32] | (lcFileContents[33] << 8)  | (lcFileContents[34] << 16) | (lcFileContents[35] << 24);
+		__int32 sShapeType =     (
 								  lcFileContents[32]
 								  + lcFileContents[23] * 256
 								  + lcFileContents[34] * 256 * 256
@@ -410,14 +413,13 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 			for (int iShapeCount=0; iMainOffset < size; iShapeCount++)
 			{
 				
-				/*int32_t sRecordNumber = (
+				/*__int32 sRecordNumber = (
 				 lcFileContents[iMainOffset+0] * 256 * 256 * 256
 				 + lcFileContents[iMainOffset+1] * 256 * 256
 				 + lcFileContents[iMainOffset+2] * 256
 				 + lcFileContents[iMainOffset+3]
 				 );*/
-				
-				int32_t sRecordLength = (
+				__int32 sRecordLength = (
 										 lcFileContents[iMainOffset+4] * 256 * 256 * 256
 										 + lcFileContents[iMainOffset+5] * 256 * 256
 										 + lcFileContents[iMainOffset+6] * 256
@@ -426,7 +428,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 				sRecordLength = sRecordLength * 2;
 				int iRecLen = 0;
 				
-				int32_t sInnerShapeType = (
+				__int32 sInnerShapeType = (
 										   lcFileContents[iMainOffset+8]
 										   + lcFileContents[iMainOffset+9] * 256
 										   + lcFileContents[iMainOffset+10] * 256 * 256
@@ -458,8 +460,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 					//cout << "My Shape #" << iShapeCount << endl; 
 					//cout << "north: " <<  dShapeBounds[3] << " - south: " <<  dShapeBounds[1] << " - east: " <<  dShapeBounds[2] << " - west: " <<  dShapeBounds[0] << endl;
 					
-					
-					int32_t sNumberOfParts = (
+					__int32 sNumberOfParts = (
 											  lcFileContents[iMainOffset+44]
 											  + lcFileContents[iMainOffset+45] * 256
 											  + lcFileContents[iMainOffset+46] * 256 * 256
@@ -467,7 +468,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 											  );
 					//cout << "sNumberOfParts:" << sNumberOfParts << endl;
 					
-					int32_t sNumberOfPoints = (
+					__int32 sNumberOfPoints = (
 											   lcFileContents[iMainOffset+48]
 											   + lcFileContents[iMainOffset+49] * 256
 											   + lcFileContents[iMainOffset+50] * 256 * 256
@@ -477,14 +478,13 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 					if (sNumberOfPoints<0){sNumberOfPoints=sNumberOfPoints*-1;}
 					iRecLen = ((44+(sNumberOfParts*4)+(sNumberOfPoints*16)) - sRecordLength);
 					iRecordOffset = 52+(sNumberOfParts*4)+(sNumberOfPoints*16);
-					
 					//Skip out if it's an empty shape
 					if (sNumberOfPoints < 1)
 					{
 						break;
 					}
 					
-					int32_t sPartBegin[sNumberOfParts];
+					__int32 * sPartBegin = new __int32[sNumberOfParts];
 					for (int iCount=0; iCount<sNumberOfParts; iCount++)
 					{
 						int iOffset = iMainOffset+52+(iCount*4);
@@ -507,7 +507,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 						memcpy(&dCopy, lcFileContents + iOffset, 8);
 						sPoints[0] = dCopy;
 						memcpy(&dCopy, lcFileContents + iOffset+8, 8);
-						sPoints[1] = dCopy;						
+						sPoints[1] = dCopy;		
 						
 						if (iPartCount < sNumberOfParts)
 						{
@@ -536,7 +536,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 									{
 										std::stringstream sStringBufferColVal;
 										std::stringstream sStringBufferColName;
-										int32_t iColumnLen = lcFileContentsDBF[48+(c*32)];//
+										__int32 iColumnLen = lcFileContentsDBF[48+(c*32)];//
 										
 										//////////////////////////////////////////////////////////////
 										//Get Column Name
@@ -582,7 +582,6 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 								}
 								//////////////////////////////
 								
-								
 								string lsFullDesc(sStringBufferDescs.str());
 								replace(lsName.begin(), lsName.end(), '&', '+');
 								replace(lsFullDesc.begin(), lsFullDesc.end(), '&', '+');
@@ -605,6 +604,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 								iPartCount++;
 							}
 						}
+						
 						
 						//THIS IS WHERE THE STATEPLANE CONVERSION CODE CAN BE REFERENCED
 						//double fLong = (sPoints[0]);
