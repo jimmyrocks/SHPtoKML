@@ -666,7 +666,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 						
 						//ConvertStatePlane(fLong, fLati, foLon, foLat);
 						
-						outFile << "\t\t\t\t\t\t" << setprecision(21) << sPoints[0] << ", " << sPoints[1] << ",0" << "\n";
+						outFile << "\t\t\t\t\t\t" << setprecision(45) << sPoints[0] << ", " << sPoints[1] << ",0" << "\n";
 						if (iCount == sNumberOfPoints-1 && lbFindEnd)
 						{
 							//In some cases we just keep searching for the end of the file
