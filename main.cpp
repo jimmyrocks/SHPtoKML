@@ -67,10 +67,33 @@ int liOpenFile(string lsFileName, string lsFilePath)
 								  + lcFileContents[35] * 256 * 256 * 256
 								  );
 		
+		//36–67 	double 	little 	Minimum bounding rectangle (MBR) of all shapes contained within the shapefile; four doubles in the following order: min X, min Y, max X, max Y
+		double dBounds[8];
+		bool bInBounds = false;
+		for (int iCount=0; iCount<8; iCount++)
+		{
+			double dCopy;
+			int iOffset = 36+(iCount*8);
+			memcpy(&dCopy, lcFileContents + iOffset, 8);
+			dBounds[(iCount)] = dCopy;
+		}
 		
 		delete[] lcFileContents;
 		
-		if (sShapeType == 5)
+		//When the reprojection code is implemented, it will run here
+		//The final values will be tested against the WGS84 bounds to make the reprojection ran correctly
+		
+		//WGS84 max bounds
+		double dMaxBounds[8];
+		dMaxBounds[0] = -90;
+		dMaxBounds[1] = -180;
+		dMaxBounds[2] = 90;
+		dMaxBounds[3] = 180;
+		
+		//Assign if we're in bounds to the variable
+		bInBounds = (dBounds[0]>=dMaxBounds[0] && dBounds[1]>=dMaxBounds[1] && dBounds[2]<=dMaxBounds[2] && dBounds[3]<=dMaxBounds[3]);
+		
+		if ((sShapeType == 5 || sShapeType == 3) && bInBounds)
 		{
 			
 			liReturnValue++;
@@ -140,6 +163,12 @@ int liOpenFile(string lsFileName, string lsFilePath)
 				cout << "The selected DBF file: \"" << lsFileDBF << "\" Cannot be opened. " << "\n";
 			}
 		}
+		else if (!bInBounds)
+		{
+			cout << "The selected shapefile: \"" << lsFileShape << "\" is not supported at this time. " << "\n";
+			cout << "Currently this program only supports files the are projected in WSG84 or similar (such as NAD83)" << "\n";
+			
+		}
 		else
 		{
 			//Since we only work with Polygon files, all other data will cause an error message
@@ -148,7 +177,7 @@ int liOpenFile(string lsFileName, string lsFilePath)
 			// http://en.wikipedia.org/wiki/Shapefile
 			
 			cout << "The selected shapefile: \"" << lsFileShape << "\" is not supported at this time. " << "\n";
-			cout << "Currently this program only supports Polygon data files (Type 5)" << "\n";
+			cout << "Currently this program only supports Polygon data files (Type 5) and Polyline data files (Type 3)" << "\n";
 			
 			
 			switch ( sShapeType ) {
@@ -158,7 +187,7 @@ int liOpenFile(string lsFileName, string lsFilePath)
 				case 1 : 
 					cout << "This shapefile contains Point data (Type " << sShapeType << ")" << endl;
 					break;
-				case 3 : 
+				case 3 :  //Just included for the sake of keeping the data together
 					cout << "This shapefile contains Polyline data (Type " << sShapeType << ")" << endl;
 					break;
 				case 5 :  //Just included for the sake of keeping the data together
@@ -357,8 +386,20 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 								  + lcFileContents[34] * 256 * 256
 								  + lcFileContents[35] * 256 * 256 * 256
 								  );
-		//36–67 	double 	little 	Minimum bounding rectangle (MBR) of all shapes contained within the shapefile; four doubles in the following order: min X, min Y, max X, max Y
+
+		string lsShapeType();
+		std::stringstream lsShapeTypeBuffer;
+		//Define the type for the KML document
+		if (sShapeType == 5)
+		{
+			lsShapeTypeBuffer << "Polygon";
+		}
+		if (sShapeType == 3)
+		{
+			lsShapeTypeBuffer << "LineString";
+		}
 		
+		//36–67 	double 	little 	Minimum bounding rectangle (MBR) of all shapes contained within the shapefile; four doubles in the following order: min X, min Y, max X, max Y
 		for (int iCount=0; iCount<8; iCount++)
 		{
 			double dCopy;
@@ -379,7 +420,7 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 		//cout << endl;
 		
 		// Now we figure out the info inside!
-		if (sShapeType == 5)
+		if (sShapeType == 5 || sShapeType == 3)
 		{
 			int iMainOffset = 100;
 			int iRecordOffset = 0;
@@ -517,7 +558,12 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 								if (iCount > 0)
 								{
 									//Write the shape out!
-									outFile << "\t\t\t\t\t</coordinates>\n\t\t\t\t</LinearRing>\n\t\t\t\t</outerBoundaryIs>\n\t\t\t</Polygon>" << "\n";
+									outFile << "\t\t\t\t\t</coordinates>";
+									if (sShapeType == 5)
+									{
+										outFile << "\n\t\t\t\t</LinearRing>\n\t\t\t\t</outerBoundaryIs>";
+									}
+									outFile << "\n\t\t\t</" << lsShapeTypeBuffer.str() << ">" << "\n";
 								}
 								
 								std::stringstream sStringBuffer;
@@ -599,7 +645,13 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 									outFile << "\t\t<styleUrl>#stdstyle</styleUrl>\n\t\t\t";
 									outFile << "\t\t<MultiGeometry>\n\t\t\t";
 								}
-								outFile << "<Polygon>\n\t\t\t<tessellate>1</tessellate>\n\t\t\t\t<outerBoundaryIs>\n\t\t\t\t<LinearRing>" << "\n";
+								outFile << "<" << lsShapeTypeBuffer.str() << ">\n\t\t\t<tessellate>1</tessellate>";
+								
+								if (sShapeType == 5)
+								{
+									outFile << "\n\t\t\t\t<outerBoundaryIs>\n\t\t\t\t<LinearRing>" << "\n";
+								}
+								
 								outFile << "\t\t\t\t\t<coordinates>" << "\n";
 								iPartCount++;
 							}
@@ -622,7 +674,12 @@ int liLoadToMemory (string lsFileName, string lsFilePath, int iNameCol)
 						}
 						
 					}
-					outFile << "\t\t\t\t\t</coordinates>\n\t\t\t\t</LinearRing>\n\t\t\t\t</outerBoundaryIs>\n\t\t\t</Polygon>\n\t\t\t</MultiGeometry>\n\t</Placemark>" << "\n";
+					outFile << "\t\t\t\t\t</coordinates>\n";
+					if (sShapeType == 5)
+					{
+						outFile << "\t\t\t\t</LinearRing>\n\t\t\t\t</outerBoundaryIs>\n"; 
+					}
+					outFile << "\t\t\t</" << lsShapeTypeBuffer.str() << ">\n\t\t\t</MultiGeometry>\n\t</Placemark>" << "\n";
 					iMainOffset = iMainOffset+ iRecordOffset; 
 				}
 				else
